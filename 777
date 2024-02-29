@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract NeuralNetwork {
+    uint256 constant inputSize = 2;
+    uint256 constant hiddenSize = 3;
+    uint256 constant outputSize = 1;
+    
+    uint256[inputSize][hiddenSize] public weightsInputHidden;
+    uint256[hiddenSize][outputSize] public weightsHiddenOutput;
+    
+    uint256 constant learningRate = 0.1;
+    
+    constructor() {
+        // Initialize weights with random values
+        for (uint256 i = 0; i < inputSize; i++) {
+            for (uint256 j = 0; j < hiddenSize; j++) {
+                weightsInputHidden[i][j] = uint256(keccak256(abi.encodePacked(i, j)));
+            }
+        }
+        
+        for (uint256 i = 0; i < hiddenSize; i++) {
+            for (uint256 j = 0; j < outputSize; j++) {
+                weightsHiddenOutput[i][j] = uint256(keccak256(abi.encodePacked(i, j)));
+            }
+        }
+    }
+    
+    function sigmoid(uint256 x) private pure returns (uint256) {
+        return 1 / (1 + (2.718281828 ** (-1 * int256(x))));
+    }
+    
+    function forwardPropagation(uint256[inputSize] memory input) public view returns (uint256[outputSize] memory) {
+        uint256[hiddenSize] memory hiddenLayer;
+        for (uint256 i = 0; i < hiddenSize; i++) {
+            uint256 weightedSum = 0;
+            for (uint256 j = 0; j < inputSize; j++) {
+                weightedSum += input[j] * weightsInputHidden[j][i];
+            }
+            hiddenLayer[i] = sigmoid(weightedSum);
+        }
+        
+        uint256[outputSize] memory output;
+        for (uint256 i = 0; i < outputSize; i++) {
+            uint256 weightedSum = 0;
+            for (uint256 j = 0; j < hiddenSize; j++) {
+                weightedSum += hiddenLayer[j] * weightsHiddenOutput[j][i];
+            }
+            output[i] = sigmoid(weightedSum);
+        }
+        
+        return output;
+    }
+    
+    function train(uint256[inputSize] memory input, uint256[outputSize] memory target) public {
+        // Forward propagation
+        uint256[outputSize] memory output = forwardPropagation(input);
+        
+        // Backpropagation
+        uint256[hiddenSize] memory hiddenLayer;
+        for (uint256 i = 0; i < hiddenSize; i++) {
+            uint256 weightedSum = 0;
+            for (uint256 j = 0; j < inputSize; j++) {
+                weightedSum += input[j] * weightsInputHidden[j][i];
+            }
+            hiddenLayer[i] = sigmoid(weightedSum);
+        }
+        
+        for (uint256 i = 0; i < outputSize; i++) {
+            for (uint256 j = 0; j < hiddenSize; j++) {
+                weightsHiddenOutput[j][i] -= learningRate * (output[i] - target[i]) * hiddenLayer[j];
+            }
+        }
+    }
+}
